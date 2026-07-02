@@ -83,36 +83,24 @@ flag these for a quick check once you have a live BlueGuard instance:
    the new role). If BlueGuard has a direct role-update endpoint, swap
    it in — it'll be more atomic than remove+re-add.
 
-## Standalone build (no Python required on target machine)
+## Standalone build (cross-platform)
 
-Build a single-file executable with [PyInstaller](https://pyinstaller.org/):
-
-```bash
-pip install -e ".[build]"
-python build.py
-```
-
-Output: `dist/exiur` (Linux/macOS) or `dist/exiur.exe` (Windows).
-
-The executable bundles Python, all dependencies, and your code — no venv or
-`pip install` needed on the target machine. Just copy `dist/exiur` and run it.
-
-**Cross-platform builds:** PyInstaller only builds for the platform it runs on.
-To build for multiple OSes, run `python build.py` on each target OS (or use a
-CI matrix with GitHub Actions).
-
-### Android (Termux)
-
-Install [Termux](https://f-droid.org/en/packages/com.termux/) on your Android
-device, then:
+Build a single `.pyz` file that works on Linux, macOS, Windows, and Android —
+anywhere Python 3.10+ is installed:
 
 ```bash
-pkg install git
-git clone <repo-url> && cd exiur-cli
-bash build-termux.sh
+python build_zipapp.py
 ```
 
-Output: `dist/exiur` (ARM64 binary for Android).
+Output: `dist/exiur.pyz` (~1.6 MB). Contains all dependencies bundled.
+
+Run it:
+```bash
+python exiur.pyz
+```
+
+No venv, no `pip install`, no compilation needed on the target machine.
+Just copy `exiur.pyz` and run with Python.
 
 ## Config file
 

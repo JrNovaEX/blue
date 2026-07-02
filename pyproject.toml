@@ -18,6 +18,3 @@ exiur = "exiur.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["exiur*"]
-
-[project.optional-dependencies]
-build = ["pyinstaller>=6.0"]
