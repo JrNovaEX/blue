@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exiur-cli"
+version = "0.1.0"
+description = "Terminal admin tool for the BlueGuard 'exiur' panel"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "requests>=2.31",
+]
+
+[project.scripts]
+exiur = "exiur.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["exiur*"]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0"]
