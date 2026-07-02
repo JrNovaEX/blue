@@ -63,9 +63,153 @@ jobs:
           name: exiur-Android
           path: dist/exiur-android-arm64
 
+  package-deb:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: exiur-Linux
+          path: artifact
+
+      - name: Build .deb package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p pkg/DEBIAN pkg/usr/bin
+          cp artifact/exiur pkg/usr/bin/exiur
+          chmod +x pkg/usr/bin/exiur
+          cat > pkg/DEBIAN/control << EOF
+          Package: exiur
+          Version: ${VERSION:-0.1.0}
+          Architecture: amd64
+          Maintainer: NovaEX <nova@exiur.dev>
+          Description: Terminal admin tool for the BlueGuard exiur panel
+          EOF
+          dpkg-deb --build pkg dist/exiur-linux-amd64.deb
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exiur-deb
+          path: dist/exiur-linux-amd64.deb
+
+  package-rpm:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: exiur-Linux
+          path: artifact
+
+      - name: Build .rpm package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sudo apt-get update && sudo apt-get install -y rpm
+          mkdir -p rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          cp artifact/exiur rpmbuild/BUILD/exiur
+          cat > rpmbuild/SPECS/exiur.spec << EOF
+          Name: exiur
+          Version: ${VERSION:-0.1.0}
+          Release: 1
+          Summary: Terminal admin tool for the BlueGuard exiur panel
+          License: MIT
+          BuildArch: x86_64
+          %description
+          Terminal admin tool for the BlueGuard exiur panel.
+          %install
+          mkdir -p %{buildroot}/usr/bin
+          cp %{_topdir}/BUILD/exiur %{buildroot}/usr/bin/exiur
+          chmod +x %{_topdir}/BUILD/exiur
+          %files
+          /usr/bin/exiur
+          EOF
+          rpmbuild -bb rpmbuild/SPECS/exiur.spec
+          cp rpmbuild/RPMS/x86_64/exiur-*.rpm dist/exiur-linux-amd64.rpm
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exiur-rpm
+          path: dist/exiur-linux-amd64.rpm
+
+  package-termux:
+    needs: build-android
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: exiur-Android
+          path: artifact
+
+      - name: Build Termux .deb package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p pkg/DEBIAN pkg/bin
+          cp artifact/exiur-android-arm64 pkg/bin/exiur
+          chmod +x pkg/bin/exiur
+          cat > pkg/DEBIAN/control << EOF
+          Package: exiur
+          Version: ${VERSION:-0.1.0}
+          Architecture: aarch64
+          Maintainer: NovaEX <nova@exiur.dev>
+          Description: Terminal admin tool for the BlueGuard exiur panel
+          Depends: python
+          EOF
+          dpkg-deb --build pkg dist/exiur-android-aarch64.deb
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exiur-termux
+          path: dist/exiur-android-aarch64.deb
+
+  package-windows-installer:
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: exiur-Windows
+          path: artifact
+
+      - name: Create portable zip
+        run: |
+          Compress-Archive -Path "artifact/exiur.exe" -DestinationPath "dist/exiur-windows-x64-portable.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exiur-windows-portable
+          path: dist/exiur-windows-x64-portable.zip
+
+  package-macos:
+    needs: build
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: exiur-macOS
+          path: artifact
+
+      - name: Create tar.gz
+        run: |
+          tar -czf dist/exiur-macos-universal.tar.gz -C artifact exiur
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exiur-macos-archive
+          path: dist/exiur-macos-universal.tar.gz
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build, build-android]
+    needs: [build, build-android, package-deb, package-rpm, package-termux, package-windows-installer, package-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -78,18 +222,28 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
-          cp artifacts/exiur-Linux/exiur release/exiur-linux
-          cp artifacts/exiur-Windows/exiur.exe release/exiur-windows.exe
-          cp artifacts/exiur-macOS/exiur release/exiur-macos
-          cp artifacts/exiur-Android/exiur-android-arm64 release/exiur-android-arm64
-          chmod +x release/exiur-linux release/exiur-macos release/exiur-android-arm64
+          cp artifacts/exiur-Linux/exiur release/exiur-linux-amd64
+          cp artifacts/exiur-Windows/exiur.exe release/exiur-windows-x64.exe
+          cp artifacts/exiur-macOS/exiur release/exiur-macos-universal
+          cp artifacts/exiur-Android/exiur-android-arm64 release/exiur-android-aarch64
+          cp artifacts/exiur-deb/exiur-linux-amd64.deb release/
+          cp artifacts/exiur-rpm/exiur-linux-amd64.rpm release/
+          cp artifacts/exiur-termux/exiur-android-aarch64.deb release/exiur-termux-aarch64.deb
+          cp artifacts/exiur-windows-portable/exiur-windows-x64-portable.zip release/
+          cp artifacts/exiur-macos-archive/exiur-macos-universal.tar.gz release/
+          chmod +x release/exiur-linux-amd64 release/exiur-macos-universal release/exiur-android-aarch64
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/exiur-linux
-            release/exiur-windows.exe
-            release/exiur-macos
-            release/exiur-android-arm64
+            release/exiur-linux-amd64
+            release/exiur-linux-amd64.deb
+            release/exiur-linux-amd64.rpm
+            release/exiur-windows-x64.exe
+            release/exiur-windows-x64-portable.zip
+            release/exiur-macos-universal
+            release/exiur-macos-universal.tar.gz
+            release/exiur-android-aarch64
+            release/exiur-termux-aarch64.deb
           generate_release_notes: true
