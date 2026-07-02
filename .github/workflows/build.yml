@@ -125,10 +125,12 @@ jobs:
           BuildArch: x86_64
           %description
           Terminal admin tool for the BlueGuard exiur panel.
+          %build
+          cp %{_topdir}/BUILD/exiur ./exiur
           %install
           mkdir -p %{buildroot}/usr/bin
-          cp %{_topdir}/BUILD/exiur %{buildroot}/usr/bin/exiur
-          chmod +x %{_topdir}/BUILD/exiur
+          cp ./exiur %{buildroot}/usr/bin/exiur
+          chmod +x %{buildroot}/usr/bin/exiur
           %files
           /usr/bin/exiur
           EOF
