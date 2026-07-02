@@ -76,12 +76,15 @@ jobs:
       - name: Build .deb package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          mkdir -p pkg/DEBIAN pkg/usr/bin
+          if ! [[ "$VERSION" =~ ^[0-9] ]]; then
+            VERSION="0.1.0"
+          fi
+          mkdir -p pkg/DEBIAN pkg/usr/bin dist
           cp artifact/exiur pkg/usr/bin/exiur
           chmod +x pkg/usr/bin/exiur
           cat > pkg/DEBIAN/control << EOF
           Package: exiur
-          Version: ${VERSION:-0.1.0}
+          Version: $VERSION
           Architecture: amd64
           Maintainer: NovaEX <nova@exiur.dev>
           Description: Terminal admin tool for the BlueGuard exiur panel
@@ -107,12 +110,15 @@ jobs:
       - name: Build .rpm package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          if ! [[ "$VERSION" =~ ^[0-9] ]]; then
+            VERSION="0.1.0"
+          fi
           sudo apt-get update && sudo apt-get install -y rpm
-          mkdir -p rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          mkdir -p rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS} dist
           cp artifact/exiur rpmbuild/BUILD/exiur
           cat > rpmbuild/SPECS/exiur.spec << EOF
           Name: exiur
-          Version: ${VERSION:-0.1.0}
+          Version: $VERSION
           Release: 1
           Summary: Terminal admin tool for the BlueGuard exiur panel
           License: MIT
@@ -148,12 +154,15 @@ jobs:
       - name: Build Termux .deb package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          mkdir -p pkg/DEBIAN pkg/bin
+          if ! [[ "$VERSION" =~ ^[0-9] ]]; then
+            VERSION="0.1.0"
+          fi
+          mkdir -p pkg/DEBIAN pkg/bin dist
           cp artifact/exiur-android-arm64 pkg/bin/exiur
           chmod +x pkg/bin/exiur
           cat > pkg/DEBIAN/control << EOF
           Package: exiur
-          Version: ${VERSION:-0.1.0}
+          Version: $VERSION
           Architecture: aarch64
           Maintainer: NovaEX <nova@exiur.dev>
           Description: Terminal admin tool for the BlueGuard exiur panel
@@ -179,6 +188,7 @@ jobs:
 
       - name: Create portable zip
         run: |
+          New-Item -ItemType Directory -Path "dist" -Force | Out-Null
           Compress-Archive -Path "artifact/exiur.exe" -DestinationPath "dist/exiur-windows-x64-portable.zip"
 
       - name: Upload artifact
@@ -199,6 +209,7 @@ jobs:
 
       - name: Create tar.gz
         run: |
+          mkdir -p dist
           tar -czf dist/exiur-macos-universal.tar.gz -C artifact exiur
 
       - name: Upload artifact
