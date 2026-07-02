@@ -53,7 +53,7 @@ jobs:
           "
 
       - name: Rename binary
-        run: mv dist/exiur dist/exiur-android-arm64
+        run: cp dist/exiur dist/exiur-android-arm64 && chmod +x dist/exiur-android-arm64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

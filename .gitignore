@@ -6,3 +6,4 @@ build/
 *.spec.bak
 .venv/
 venv/
+uv.lock
