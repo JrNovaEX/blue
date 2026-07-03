@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-
+from datetime import datetime, timedelta, timezone
 import click
 
 from .api import APIError, ExiurAPI
@@ -425,10 +425,12 @@ def tokens_list(ctx: click.Context):
 @click.option("--name", required=True)
 @click.option("--scopes", default=None, help="comma-separated, e.g. read,write")
 @click.option("--rate-limit", default=None, type=int)
-@click.option("--expires", default=None, help="ISO datetime")
+@click.option("--expires", default=None, help="ISO datetime, or a plain number of days from now")
 @click.pass_context
 def tokens_create(ctx: click.Context, name: str, scopes: str | None, rate_limit: int | None, expires: str | None):
     api: ExiurAPI = ctx.obj["api"]
+    if expires and expires.strip().isdigit():
+        expires = (datetime.now(timezone.utc) + timedelta(days=int(expires))).isoformat()
     scope_list = [s.strip() for s in scopes.split(",")] if scopes else None
     try:
         result = api.create_license(name, scope_list, rate_limit, expires)
@@ -437,6 +439,7 @@ def tokens_create(ctx: click.Context, name: str, scopes: str | None, rate_limit:
         return
     ok(f"Created token '{name}'.")
     console.print(f"[bold yellow]Save this now, it won't be shown again:[/]\n{result.get('rawToken')}")
+
 
 
 @tokens.command("rotate")

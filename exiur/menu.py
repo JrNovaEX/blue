@@ -6,6 +6,7 @@ click commands use, so behaviour stays identical either way.
 from __future__ import annotations
 
 import click
+from datetime import datetime, timedelta, timezone
 
 from .api import APIError, ExiurAPI
 from .config import clear_session, is_logged_in
@@ -184,6 +185,8 @@ def menu_tokens(api: ExiurAPI) -> None:
                 scopes = click.prompt("scopes, comma-separated (blank to skip)", default="", show_default=False)
                 rate_limit = click.prompt("rate limit (blank to skip)", default="", show_default=False)
                 expires = click.prompt("expires at, ISO datetime (blank to skip)", default="", show_default=False)
+                if expires and expires.strip().isdigit():
+                    expires = (datetime.now(timezone.utc) + timedelta(days=int(expires))).isoformat()
                 scope_list = [s.strip() for s in scopes.split(",")] if scopes else None
                 result = api.create_license(
                     name, scope_list,
